@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 public class Application {
 
     public static void main(String[] args) throws Exception {
-        NettyClient client = new NettyClient();
+        NettyClient client = new NettyClient(9001, "47.100.3.29");
         try {
             Channel ch = client.getChannel();
 
