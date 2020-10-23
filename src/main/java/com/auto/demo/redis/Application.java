@@ -1,12 +1,18 @@
 package com.auto.demo.redis;
 
 import com.auto.demo.redis.client.NettyClient;
+import com.auto.demo.redis.core.LettuceFutures;
+import com.auto.demo.redis.core.RedisCommandBuilder;
+import com.auto.demo.redis.core.RedisFuture;
+import com.auto.demo.redis.core.codec.StringCodec;
+import com.auto.demo.redis.core.protocol.AsyncCommand;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wbs
@@ -14,46 +20,32 @@ import java.io.InputStreamReader;
  */
 public class Application {
 
+
     public static void main(String[] args) throws Exception {
-        NettyClient client = new NettyClient(9001, "47.100.3.29");
+        NettyClient client = new NettyClient();
         try {
             Channel ch = client.getChannel();
 
-            // 读取控制台命令
-            System.out.println("Enter Redis commands (quit to end)");
-            ChannelFuture lastWriteFuture = null;
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            while (true) {
-                final String input = in.readLine();
-                final String command = input != null ? input.trim() : null;
-                //quit exit 命令来退出
-                if (command == null || "quit".equalsIgnoreCase(command) || "exit".equalsIgnoreCase(command)) {
-                    ch.close().sync();
-                    break;
-                } else if (command.isEmpty()) {
-                    continue;
-                }
-                // 发送命令到redis
-                lastWriteFuture = ch.writeAndFlush(command);
-                lastWriteFuture.addListener(new GenericFutureListener<ChannelFuture>() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (!future.isSuccess()) {
-                            System.err.print("write failed: ");
-                            future.cause().printStackTrace(System.err);
-                        }
-                    }
-                });
+            RedisCommandBuilder commandBuilder = new RedisCommandBuilder<>(StringCodec.UTF8);
+
+            AsyncCommand asyncCommand = new AsyncCommand<>(commandBuilder.get("k"));
+
+            ch.writeAndFlush(asyncCommand);
+            Object result = null;
+            if (asyncCommand instanceof RedisFuture) {
+                RedisFuture<?> command = (RedisFuture<?>) asyncCommand;
+                result = LettuceFutures.awaitOrCancel(command, 5, TimeUnit.SECONDS);
             }
 
-            // 释放资源
-            if (lastWriteFuture != null) {
-                lastWriteFuture.sync();
-            }
+
+            System.out.println(result.toString());
+//            ch.close().sync();
         } finally {
             client.getGroup().shutdownGracefully();
         }
     }
+
+
 
 
 }
