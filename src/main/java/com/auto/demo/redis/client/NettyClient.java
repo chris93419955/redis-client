@@ -72,5 +72,12 @@ public class NettyClient {
         return asyncCommand;
     }
 
+    public RedisCommand set(String key, String value) {
+        RedisCommandBuilder commandBuilder = new RedisCommandBuilder<>(StringCodec.UTF8);
+        AsyncCommand asyncCommand = new AsyncCommand<>(commandBuilder.set(key, value));
+        channel.writeAndFlush(asyncCommand);
+        return asyncCommand;
+    }
+
 
 }

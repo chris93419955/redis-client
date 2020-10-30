@@ -20,9 +20,19 @@ public class DemoController {
     @Autowired
     private NettyClient nettyClient;
 
-    @GetMapping("/getKey")
+    @GetMapping("/get")
     public String get(String key) {
         RedisCommand result = nettyClient.get(key);
+        if (result instanceof RedisFuture) {
+            RedisFuture<String> command = (RedisFuture<String>) result;
+            return LettuceFutures.awaitOrCancel(command, 5, TimeUnit.SECONDS);
+        }
+        return "";
+    }
+
+    @GetMapping("/set")
+    public String set(String key, String value) {
+        RedisCommand result = nettyClient.set(key, value);
         if (result instanceof RedisFuture) {
             RedisFuture<String> command = (RedisFuture<String>) result;
             return LettuceFutures.awaitOrCancel(command, 5, TimeUnit.SECONDS);

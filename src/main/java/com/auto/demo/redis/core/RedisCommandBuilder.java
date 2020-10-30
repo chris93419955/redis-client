@@ -1026,7 +1026,7 @@ public class RedisCommandBuilder<K, V> extends BaseRedisCommandBuilder<K, V> {
     }
 
 
-    Command<K, V, String> set(K key, V value) {
+    public Command<K, V, String> set(K key, V value) {
         notNullKey(key);
 
         return createCommand(SET, new StatusOutput<>(codec), key, value);
