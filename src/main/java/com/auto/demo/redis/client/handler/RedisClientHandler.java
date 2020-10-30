@@ -8,6 +8,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.Recycler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -83,6 +86,8 @@ public class RedisClientHandler extends ChannelDuplexHandler {
 
             if (promise.isVoid()) {
                 stack.add(command);
+            }else {
+                promise.addListener(AddToStack.newInstance(stack, command));
             }
         } catch (Exception e) {
             command.completeExceptionally(e);
@@ -238,6 +243,68 @@ public class RedisClientHandler extends ChannelDuplexHandler {
         }
 
         return target;
+    }
+
+    static class AddToStack implements GenericFutureListener<Future<Void>> {
+
+        private static final Recycler<AddToStack> RECYCLER = new Recycler<AddToStack>() {
+
+            @Override
+            protected AddToStack newObject(Handle<AddToStack> handle) {
+                return new AddToStack(handle);
+            }
+
+        };
+
+        private final Recycler.Handle<AddToStack> handle;
+
+        private ArrayDeque<Object> stack;
+
+        private RedisCommand<?, ?, ?> command;
+
+        AddToStack(Recycler.Handle<AddToStack> handle) {
+            this.handle = handle;
+        }
+
+        /**
+         * Allocate a new instance.
+         *
+         * @param stack
+         * @param command
+         * @return
+         */
+        @SuppressWarnings("unchecked")
+        static AddToStack newInstance(ArrayDeque<?> stack, RedisCommand<?, ?, ?> command) {
+
+            AddToStack entry = RECYCLER.get();
+
+            entry.stack = (ArrayDeque<Object>) stack;
+            entry.command = command;
+
+            return entry;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void operationComplete(Future<Void> future) {
+
+            try {
+                if (future.isSuccess()) {
+                    stack.add(command);
+                }
+            } finally {
+                recycle();
+            }
+        }
+
+        private void recycle() {
+
+            this.stack = null;
+            this.command = null;
+
+            handle.recycle(this);
+        }
+
     }
 
 }

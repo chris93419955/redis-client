@@ -1,0 +1,5 @@
+redis:
+  port: 9001
+  host: 47.100.3.29
+server:
+  port: 9090
