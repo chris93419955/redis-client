@@ -1,4 +1,4 @@
-package com.auto.demo.redis.example;
+package com.auto.demo.redis.example.sync;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;

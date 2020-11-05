@@ -1,4 +1,4 @@
-package com.auto.demo.redis.example;
+package com.auto.demo.redis.example.sync;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
