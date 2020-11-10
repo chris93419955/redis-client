@@ -1,5 +1,5 @@
 redis:
   port: 9001
-  host: 47.100.3.29
+  host: 124.70.93.249
 server:
   port: 9090
